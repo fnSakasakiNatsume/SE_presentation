@@ -1,4 +1,4 @@
-# 简历上展示NTU-SmartHub
+# NTU-SmartHub
 
 ## 项目描述
 
