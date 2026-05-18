@@ -1,14 +1,13 @@
 package com.hmdp.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.hmdp.dto.Result;
 import com.hmdp.dto.UserDTO;
 import com.hmdp.entity.Follow;
-import com.hmdp.entity.User;
 import com.hmdp.mapper.FollowMapper;
 import com.hmdp.service.IFollowService;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.hmdp.service.IUserService;
 import com.hmdp.utils.UserHolder;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
@@ -21,80 +20,126 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * <p>
- *  服务实现类
- * </p>
- *
- * @author 虎哥
- * @since 2021-12-22
+ * 关注业务实现类
  */
 @Service
 public class FollowServiceImpl extends ServiceImpl<FollowMapper, Follow> implements IFollowService {
+
+    private static final String FOLLOW_KEY_PREFIX = "follows:";
 
     @Resource
     private StringRedisTemplate stringRedisTemplate;
 
     @Resource
-    private UserServiceImpl userService;
+    private IUserService userService;
+
     @Override
     public Result follow(Long followUserId, Boolean isFollow) {
-        //获取登录用户
-        Long userId = UserHolder.getUser().getId();
-        String key = "follows:" + userId;
-        //1.判断关注还是取关
-        if(isFollow) {
-            //2.关注
-            Follow follow = new Follow();
-            follow.setFollowUserId(followUserId);
-            follow.setUserId(userId);
-            boolean isSuccess = save(follow);
-            if(isSuccess){
-                //把关注用户的id，放入redis的set集合 sadd userId followUserId
-                stringRedisTemplate.opsForSet().add(key,followUserId.toString());
-            }
-        }else {
-            //3.取关
-            boolean isSuccess = remove(new QueryWrapper<Follow>()
-                    .eq("user_id", userId)
-                    .eq("follow_user_id", followUserId));
-            //移除
-            if(isSuccess){
-                stringRedisTemplate.opsForSet().remove(key,followUserId.toString());
-            }
+        if (followUserId == null) {
+            return Result.fail("关注用户不能为空");
         }
-        return Result.ok();
+
+        Long userId = UserHolder.getUser().getId();
+        if (followUserId.equals(userId)) {
+            return Result.fail("不能关注自己");
+        }
+
+        if (Boolean.TRUE.equals(isFollow)) {
+            return doFollow(userId, followUserId);
+        }
+
+        return cancelFollow(userId, followUserId);
     }
 
     @Override
     public Result isFollow(Long followUserId) {
-        Long userId = UserHolder.getUser().getId();
-        //1.查询是否关注select* from tb_follow where user_id=？ and follow_id=?
-        Integer count = query().eq("user_id", userId).eq("follow_user_id", followUserId).count();
-            return Result.ok(count>0);
+        if (followUserId == null) {
+            return Result.ok(false);
+        }
 
+        Long userId = UserHolder.getUser().getId();
+
+        int count = lambdaQuery()
+                .eq(Follow::getUserId, userId)
+                .eq(Follow::getFollowUserId, followUserId)
+                .count();
+
+        return Result.ok(count > 0);
     }
 
     @Override
     public Result followCommons(Long id) {
-        //获取当前用户
-        Long userId = UserHolder.getUser().getId();
-        String key = "follows:" + userId;
-        //求交集
-        String key2 = "follows:" + id;
-        Set<String> intersect = stringRedisTemplate.opsForSet().intersect(key, key2);
-        if(intersect==null||intersect.isEmpty()){
+        if (id == null) {
             return Result.ok(Collections.emptyList());
         }
-        //解析出id
-        List<Long> ids = intersect.stream().map(Long::valueOf).collect(Collectors.toList());
 
-        //查询用户
-        List<UserDTO> userDTOS = userService
-                .listByIds(ids).stream()
+        Long userId = UserHolder.getUser().getId();
+
+        Set<String> commonFollowIds = stringRedisTemplate.opsForSet()
+                .intersect(buildFollowKey(userId), buildFollowKey(id));
+
+        if (commonFollowIds == null || commonFollowIds.isEmpty()) {
+            return Result.ok(Collections.emptyList());
+        }
+
+        List<Long> ids = commonFollowIds.stream()
+                .map(Long::valueOf)
+                .collect(Collectors.toList());
+
+        List<UserDTO> users = userService.listByIds(ids).stream()
                 .map(user -> BeanUtil.copyProperties(user, UserDTO.class))
                 .collect(Collectors.toList());
 
-        return Result.ok(userDTOS);
+        return Result.ok(users);
+    }
 
+    /**
+     * 执行关注操作
+     */
+    private Result doFollow(Long userId, Long followUserId) {
+        boolean exists = lambdaQuery()
+                .eq(Follow::getUserId, userId)
+                .eq(Follow::getFollowUserId, followUserId)
+                .count() > 0;
+
+        if (exists) {
+            return Result.ok();
+        }
+
+        Follow follow = new Follow()
+                .setUserId(userId)
+                .setFollowUserId(followUserId)
+                .setCreateTime(LocalDateTime.now());
+
+        boolean saved = save(follow);
+
+        if (saved) {
+            stringRedisTemplate.opsForSet()
+                    .add(buildFollowKey(userId), followUserId.toString());
+            return Result.ok();
+        }
+
+        return Result.fail("关注失败");
+    }
+
+    /**
+     * 执行取消关注操作
+     */
+    private Result cancelFollow(Long userId, Long followUserId) {
+        boolean removed = lambdaUpdate()
+                .eq(Follow::getUserId, userId)
+                .eq(Follow::getFollowUserId, followUserId)
+                .remove();
+
+        if (removed) {
+            stringRedisTemplate.opsForSet()
+                    .remove(buildFollowKey(userId), followUserId.toString());
+        }
+
+        return Result.ok();
+    }
+
+    private String buildFollowKey(Long userId) {
+        return FOLLOW_KEY_PREFIX + userId;
     }
 }
