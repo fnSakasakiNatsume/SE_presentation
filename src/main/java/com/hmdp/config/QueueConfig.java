@@ -12,6 +12,9 @@ public class QueueConfig {
     public static final String X_EXCHANGE="X";
     //死信交换机名称
     public static final String Y_DEAD_LETTER_EXCHANGE="Y";
+    /** 普通队列绑定 X 交换机时使用的路由键 */
+    public static final String SECKILL_ORDER_ROUTING_KEY = "XA";
+
     //普通队列名称
     public static final String QUEUE_A="QA";
     //死信队列名称
@@ -74,7 +77,7 @@ public class QueueConfig {
     @Bean
     public Binding queueABindingX(@Qualifier("queueA")Queue queueA,
                                   @Qualifier("xExchange") DirectExchange xExchange){
-        return BindingBuilder.bind(queueA).to(xExchange).with("XA");
+        return BindingBuilder.bind(queueA).to(xExchange).with(SECKILL_ORDER_ROUTING_KEY);
     }
 
     /**
