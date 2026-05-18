@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>黑马点评 · 桌面端演示</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+    rel="stylesheet"
+  />
+  <style>
+    html, body, #app {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+      background: #C4F532;
+      color: #0a0a0a;
+      -webkit-font-smoothing: antialiased;
+    }
+    /* 全局主题色覆盖 */
+    :root {
+      --hm-lime: #C4F532;
+      --hm-lime-2: #B5E62D;
+      --hm-lime-3: #A8D81F;
+      --hm-black: #0a0a0a;
+      --hm-white: #ffffff;
+      --hm-muted: #6b7280;
+    }
+    .serif {
+      font-family: 'Playfair Display', 'Times New Roman', Georgia, serif;
+      letter-spacing: -0.01em;
+    }
+    /* Element Plus 主按钮覆盖 */
+    .el-button--primary {
+      background-color: #0a0a0a !important;
+      border-color: #0a0a0a !important;
+      border-radius: 999px !important;
+      font-weight: 600 !important;
+      padding: 12px 24px !important;
+      height: auto !important;
+    }
+    .el-button--primary:hover {
+      background-color: #1f1f1f !important;
+      border-color: #1f1f1f !important;
+    }
+    .el-button--danger {
+      background-color: #C4F532 !important;
+      border-color: #C4F532 !important;
+      color: #0a0a0a !important;
+      border-radius: 999px !important;
+      font-weight: 700 !important;
+      padding: 12px 24px !important;
+      height: auto !important;
+    }
+    .el-button--danger:hover {
+      background-color: #B5E62D !important;
+      border-color: #B5E62D !important;
+    }
+    .el-button--success {
+      background-color: #0a0a0a !important;
+      border-color: #0a0a0a !important;
+      color: #C4F532 !important;
+      border-radius: 999px !important;
+      font-weight: 600 !important;
+    }
+    .el-card {
+      border-radius: 20px !important;
+      border: none !important;
+      overflow: hidden;
+    }
+    .el-tag {
+      border-radius: 999px !important;
+      font-weight: 600 !important;
+      padding: 0 10px !important;
+    }
+    .el-input__inner {
+      border-radius: 12px !important;
+    }
+    .el-input-group__append .el-button {
+      border-radius: 0 12px 12px 0 !important;
+    }
+    /* 滚动条 */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); border-radius: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

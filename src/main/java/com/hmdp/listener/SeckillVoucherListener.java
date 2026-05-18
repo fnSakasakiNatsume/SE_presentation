@@ -4,17 +4,17 @@ import cn.hutool.json.JSONUtil;
 import com.hmdp.entity.VoucherOrder;
 import com.hmdp.service.impl.SeckillVoucherServiceImpl;
 import com.hmdp.service.impl.VoucherOrderServiceImpl;
-import com.rabbitmq.client.Channel;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.amqp.core.Message;
-import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 
+/**
+ * Kafka 消费者：从 seckill.orders 拉取消息，异步入库。
+ * 消费者组 hmdp-seckill-group 保证同一条订单只被组内一个实例消费。
+ */
 @Component
-@RequiredArgsConstructor
 @Slf4j
 public class SeckillVoucherListener {
 
@@ -22,46 +22,20 @@ public class SeckillVoucherListener {
     SeckillVoucherServiceImpl seckillVoucherService;
     @Resource
     VoucherOrderServiceImpl voucherOrderService;
-    /**
-     * sheng  消费者1
-     * @param message
-     * @param channel
-     * @throws Exception
-     */
-    @RabbitListener(queues = "QA")
-    public void receivedA(Message message, Channel channel)throws Exception{
-        String msg=new String(message.getBody());
-        log.info("正常队列:");
-        VoucherOrder voucherOrder = JSONUtil.toBean(msg, VoucherOrder.class);
-        log.info(voucherOrder.toString());
-        voucherOrderService.save(voucherOrder);//保存到数据库
-        //数据库秒杀库存减一
-        Long voucherId=voucherOrder.getVoucherId();
-        seckillVoucherService.update()
-                .setSql("stock = stock - 1") // set stock = stock - 1
-                .eq("voucher_id", voucherId).gt("stock", 0) // where id = ? and stock > 0
-                .update();
 
-    }
-
-    /**
-     * sheng  消费者2
-     * @param message
-     * @throws Exception
-     */
-    @RabbitListener(queues = "QD")
-    public void receivedD(Message message)throws Exception{
-        log.info("死信队列:");
-        String msg=new String(message.getBody());
+    @KafkaListener(topics = "seckill.orders", groupId = "hmdp-seckill-group")
+    public void onSeckillOrder(String msg) {
+        log.info("[Kafka] 收到秒杀订单消息: {}", msg);
         VoucherOrder voucherOrder = JSONUtil.toBean(msg, VoucherOrder.class);
-        log.info(voucherOrder.toString());
+        // 1. 保存订单
         voucherOrderService.save(voucherOrder);
-
-        Long voucherId=voucherOrder.getVoucherId();
+        // 2. 数据库库存 -1（with stock > 0 防止超卖兜底）
+        Long voucherId = voucherOrder.getVoucherId();
         seckillVoucherService.update()
-                .setSql("stock = stock - 1") // set stock = stock - 1
-                .eq("voucher_id", voucherId).gt("stock", 0) // where id = ? and stock > 0
+                .setSql("stock = stock - 1")
+                .eq("voucher_id", voucherId)
+                .gt("stock", 0)
                 .update();
-
+        log.info("[Kafka] 订单 {} 已入库", voucherOrder.getId());
     }
 }

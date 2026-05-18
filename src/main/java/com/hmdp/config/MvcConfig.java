@@ -4,7 +4,7 @@ import com.hmdp.interceptor.LoginInterceptor;
 import com.hmdp.interceptor.RefreshTokenInterceptor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.stereotype.Component;
+import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
@@ -30,5 +30,21 @@ public class MvcConfig implements WebMvcConfigurer {
         //token刷新的拦截器
         registry.addInterceptor(new RefreshTokenInterceptor(stringRedisTemplate))
                 .addPathPatterns("/**").order(0);
+    }
+
+    @Override
+    public void addCorsMappings(CorsRegistry registry) {
+        // Spring 5.2 (Spring Boot 2.3.x) 没有 allowedOriginPatterns，用精确 origin 列表
+        // 浏览器规范禁止 allowedOrigins("*") + allowCredentials=true 一起用
+        registry.addMapping("/**")
+                .allowedOrigins(
+                        "http://localhost:5173",
+                        "http://127.0.0.1:5173"
+                )
+                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                .allowedHeaders("*")
+                .exposedHeaders("authorization")
+                .allowCredentials(true)
+                .maxAge(3600);
     }
 }
