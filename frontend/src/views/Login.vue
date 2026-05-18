@@ -3,18 +3,19 @@
     <div class="login-grid">
       <!-- 左：插画/标语 -->
       <div class="brand-side">
-        <div class="brand-logo">🍜 黑马点评</div>
+        <div class="brand-logo">🎓 NTU Smarthub</div>
         <h1 class="brand-title serif">
-          Let's <br />
-          Seckill!
+          Rush. <br />
+          Shop. <br />
+          Connect.
         </h1>
         <p class="brand-desc">
-          High-concurrency seckill platform powered by<br />
-          Redis · Kafka · Lua · Distributed Lock
+          Campus marketplace · Ticket rush · Merchant discovery<br />
+          Powered by Redis · Kafka · Lua · Distributed Lock
         </p>
         <div class="brand-bottom">
           <div class="dot"></div>
-          软工课程展示 · 2026
+          NTU SE Group Project · 2026
         </div>
       </div>
 
@@ -22,18 +23,18 @@
       <div class="form-side">
         <div class="form-card">
           <div class="form-header">
-            <span class="badge">Step 01 / 短信验证码登录</span>
-            <h2 class="serif">登录账号</h2>
+            <span class="badge">Step 01 / SMS Code Login</span>
+            <h2 class="serif">Sign in</h2>
             <p class="subtitle">
-              输入手机号 + 验证码即可登录，验证码会打印在后端控制台。
+              Enter your phone number and the SMS code. The code is printed in the backend console.
             </p>
           </div>
 
           <el-form :model="form" label-position="top" @submit.prevent="onLogin">
-            <el-form-item label="手机号">
+            <el-form-item label="Phone">
               <el-input
                 v-model="form.phone"
-                placeholder="11 位手机号"
+                placeholder="11-digit phone number"
                 maxlength="11"
                 size="large"
               >
@@ -42,15 +43,15 @@
                     :disabled="cooldown > 0 || !form.phone"
                     @click="onSendCode"
                   >
-                    {{ cooldown > 0 ? `${cooldown}s 后重发` : '发送验证码' }}
+                    {{ cooldown > 0 ? `Resend in ${cooldown}s` : 'Send code' }}
                   </el-button>
                 </template>
               </el-input>
             </el-form-item>
-            <el-form-item label="验证码">
+            <el-form-item label="Code">
               <el-input
                 v-model="form.code"
-                placeholder="6 位数字验证码"
+                placeholder="6-digit code"
                 maxlength="6"
                 size="large"
                 @keyup.enter="onLogin"
@@ -65,7 +66,7 @@
                 size="large"
                 style="width: 100%"
               >
-                登 录 →
+                Sign in →
               </el-button>
             </div>
           </el-form>
@@ -73,7 +74,7 @@
           <div class="tip-box">
             <div class="tip-icon">💡</div>
             <div>
-              验证码不发短信，请在 <b>IDEA 控制台</b> 找：<br />
+              No real SMS in demo. Check the <b>IDE console</b> for:<br />
               <code>短信验证码发送成功：xxxxxx</code>
             </div>
           </div>
@@ -100,12 +101,12 @@ const userStore = useUserStore()
 
 async function onSendCode() {
   if (!/^1\d{10}$/.test(form.phone)) {
-    ElMessage.warning('手机号格式不正确（11 位数字，1 开头）')
+    ElMessage.warning('Invalid phone (11 digits starting with 1)')
     return
   }
   try {
     await sendCode(form.phone)
-    ElMessage.success('验证码已发送，请在后端控制台查看')
+    ElMessage.success('Code sent. Check the backend console.')
     cooldown.value = 60
     timer = setInterval(() => {
       cooldown.value--
@@ -116,7 +117,7 @@ async function onSendCode() {
 
 async function onLogin() {
   if (!form.phone || !form.code) {
-    ElMessage.warning('请填写手机号和验证码')
+    ElMessage.warning('Please enter both phone and code')
     return
   }
   loading.value = true
@@ -125,7 +126,7 @@ async function onLogin() {
     userStore.setToken(res.data)
     const me = await getMe()
     userStore.setUser(me.data)
-    ElMessage.success('登录成功')
+    ElMessage.success('Signed in')
     router.push('/home')
   } catch (e) {
   } finally {

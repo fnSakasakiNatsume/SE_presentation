@@ -2,7 +2,7 @@
   <div class="blog-detail">
     <AppHeader />
     <div class="content" v-loading="loading">
-      <button class="back-btn" @click="$router.push('/blog')">← 返回探店</button>
+      <button class="back-btn" @click="$router.push('/blog')">← Back to Notes</button>
 
       <article v-if="blog" class="article-card">
         <!-- 作者 -->
@@ -14,7 +14,7 @@
             <div class="author-name">{{ blog.name }}</div>
             <div class="post-date">📅 {{ formatTime(blog.createTime) }}</div>
           </div>
-          <span class="hot-badge">🔥 {{ blog.liked }} 赞</span>
+          <span class="hot-badge">🔥 {{ blog.liked }} likes</span>
         </header>
 
         <!-- 标题 -->
@@ -32,11 +32,11 @@
             @click="onLike"
           >
             <span class="heart">{{ blog.isLike ? '❤️' : '🤍' }}</span>
-            <span>{{ blog.isLike ? '已点赞' : '点个赞' }}</span>
+            <span>{{ blog.isLike ? 'Liked' : 'Like' }}</span>
             <span class="count">{{ blog.liked || 0 }}</span>
           </button>
           <div class="action-hint">
-            一人一次，再点取消（数据 Redis ZSet 实时排行）
+            One like per user, click again to undo · Powered by Redis ZSet
           </div>
         </footer>
       </article>
@@ -44,8 +44,8 @@
       <!-- Top 5 点赞用户 -->
       <section v-if="blog" class="likers-card">
         <div class="likers-head">
-          <h3 class="serif">最先点赞的 5 位用户</h3>
-          <span class="hint">按点赞时间排序 · Redis ZSet 实现</span>
+          <h3 class="serif">Top 5 First Likers</h3>
+          <span class="hint">Sorted by like time · Redis ZSet</span>
         </div>
         <div v-if="likers.length" class="likers-row">
           <div
@@ -63,7 +63,7 @@
         </div>
         <el-empty
           v-else
-          description="还没有人点赞，你来当第一个 ❤️"
+          description="No likes yet — be the first ❤️"
           :image-size="80"
         />
       </section>
@@ -117,7 +117,7 @@ async function onLike() {
     const wasLiked = blog.value.isLike
     blog.value.isLike = !wasLiked
     blog.value.liked += wasLiked ? -1 : 1
-    ElMessage.success(wasLiked ? '已取消点赞' : '点赞成功 ❤️')
+    ElMessage.success(wasLiked ? 'Unliked' : 'Liked ❤️')
     // 刷新点赞用户列表
     const lRes = await getBlogLikes(blogId)
     likers.value = lRes.data || []

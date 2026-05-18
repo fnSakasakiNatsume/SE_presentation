@@ -20,19 +20,19 @@ request.interceptors.response.use(
   (response) => {
     const data = response.data
     if (data && data.success === false) {
-      ElMessage.error(data.errorMsg || '请求失败')
-      return Promise.reject(new Error(data.errorMsg || '请求失败'))
+      ElMessage.error(data.errorMsg || 'Request failed')
+      return Promise.reject(new Error(data.errorMsg || 'Request failed'))
     }
     return data
   },
   (error) => {
     if (error.response?.status === 401) {
-      ElMessage.warning('登录已过期，请重新登录')
+      ElMessage.warning('Session expired, please sign in again')
       const userStore = useUserStore()
       userStore.logout()
       router.push('/login')
     } else {
-      ElMessage.error(error.message || '网络异常')
+      ElMessage.error(error.message || 'Network error')
     }
     return Promise.reject(error)
   }

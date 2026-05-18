@@ -6,10 +6,10 @@
       <section class="section">
         <div class="section-head">
           <div>
-            <span class="hero-badge">🔥 实时秒杀进行中</span>
-            <h2 class="serif">选个分类，开抢吧</h2>
+            <span class="hero-badge">🔥 Live Seckill Now</span>
+            <h2 class="serif">Pick a category, grab a deal</h2>
           </div>
-          <span class="hint">点击卡片查看详情 / 抢秒杀券 →</span>
+          <span class="hint">Click a card to view details / seckill →</span>
         </div>
 
         <div class="white-card">
@@ -36,19 +36,19 @@
                 </div>
                 <div class="shop-rate">
                   <span class="rate-pill">⭐ {{ (shop.score / 10).toFixed(1) }}</span>
-                  <span class="price">¥{{ shop.avgPrice }}/人</span>
+                  <span class="price">¥{{ shop.avgPrice }} / person</span>
                 </div>
                 <div class="shop-addr">📍 {{ shop.area }} · {{ shop.address }}</div>
                 <div class="shop-bottom">
-                  <span>🛒 销量 {{ shop.sold }}</span>
-                  <span>💬 评论 {{ shop.comments }}</span>
+                  <span>🛒 Sold {{ shop.sold }}</span>
+                  <span>💬 {{ shop.comments }} reviews</span>
                 </div>
               </div>
             </div>
 
             <el-empty
               v-if="!loading && !shops.length"
-              description="该分类下暂无商铺"
+              description="No shops in this category"
               style="grid-column: 1 / -1"
             />
           </div>

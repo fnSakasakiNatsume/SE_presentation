@@ -2,15 +2,15 @@
   <header class="app-header">
     <div class="header-content">
       <div class="logo" @click="$router.push('/home')">
-        <span class="logo-icon">🍜</span>
-        <span class="logo-text serif">黑马点评</span>
+        <span class="logo-icon">🎓</span>
+        <span class="logo-text serif">NTU Smarthub</span>
       </div>
       <nav class="nav">
         <router-link to="/home" class="nav-link" active-class="active">
-          🏪 商铺
+          🏪 Shops
         </router-link>
         <router-link to="/blog" class="nav-link" active-class="active">
-          ✨ 探店
+          ✨ Notes
         </router-link>
       </nav>
       <div class="user-area">
@@ -22,7 +22,7 @@
             <span class="nick">{{ userStore.user.nickName }}</span>
           </div>
         </template>
-        <button class="logout-btn" @click="logout">退出</button>
+        <button class="logout-btn" @click="logout">Logout</button>
       </div>
     </div>
   </header>

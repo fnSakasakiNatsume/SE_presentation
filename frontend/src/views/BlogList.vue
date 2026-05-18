@@ -6,21 +6,21 @@
       <!-- 顶部介绍条 -->
       <section class="intro">
         <div>
-          <span class="hero-badge">🏆 点赞排行榜</span>
-          <h2 class="serif">达人探店</h2>
+          <span class="hero-badge">🏆 Like Leaderboard</span>
+          <h2 class="serif">Explorer Notes</h2>
           <p class="subtitle">
-            按点赞数实时排序，数据存在 <code>Redis ZSet</code> 里
+            Live ranking by likes, powered by <code>Redis ZSet</code>
           </p>
         </div>
         <div class="stats-card" v-if="blogs.length">
           <div class="stat">
             <div class="stat-num serif">{{ blogs.length }}</div>
-            <div class="stat-label">篇笔记</div>
+            <div class="stat-label">Notes</div>
           </div>
           <div class="stat-divider"></div>
           <div class="stat">
             <div class="stat-num serif">{{ totalLikes }}</div>
-            <div class="stat-label">总点赞</div>
+            <div class="stat-label">Total likes</div>
           </div>
         </div>
       </section>
@@ -46,7 +46,7 @@
           </div>
           <h3 class="podium-title">{{ blog.title }}</h3>
           <div class="podium-bottom">
-            <span class="likes-pill">❤️ {{ blog.liked }} 赞</span>
+            <span class="likes-pill">❤️ {{ blog.liked }} likes</span>
             <span class="arrow">→</span>
           </div>
         </div>
@@ -55,8 +55,8 @@
       <!-- 其余笔记 -->
       <section v-if="rest.length" class="rest-section">
         <div class="section-head">
-          <h3 class="serif">更多笔记</h3>
-          <span class="hint">{{ rest.length }} 篇</span>
+          <h3 class="serif">More Notes</h3>
+          <span class="hint">{{ rest.length }} notes</span>
         </div>
         <div class="grid">
           <article
@@ -93,7 +93,7 @@
 
       <el-empty
         v-if="!loading && !blogs.length"
-        description="还没有任何探店笔记"
+        description="No explorer notes yet"
       />
     </div>
   </div>

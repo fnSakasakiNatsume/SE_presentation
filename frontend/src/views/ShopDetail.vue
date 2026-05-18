@@ -2,7 +2,7 @@
   <div class="shop-detail">
     <AppHeader />
     <div class="content" v-loading="loading">
-      <button class="back-btn" @click="$router.push('/home')">← 返回首页</button>
+      <button class="back-btn" @click="$router.push('/home')">← Back to home</button>
 
       <!-- 商铺信息 -->
       <section v-if="shop" class="hero-card">
@@ -12,26 +12,26 @@
             <h1 class="serif hero-name">{{ shop.name }}</h1>
             <div class="meta-row">
               <span class="meta-pill dark">
-                ⭐ {{ (shop.score / 10).toFixed(1) }} 分
+                ⭐ {{ (shop.score / 10).toFixed(1) }}
               </span>
-              <span class="meta-pill">¥{{ shop.avgPrice }} / 人</span>
+              <span class="meta-pill">¥{{ shop.avgPrice }} / person</span>
               <span class="meta-pill">🕒 {{ shop.openHours }}</span>
             </div>
             <p class="addr">📌 {{ shop.address }}</p>
             <div class="stats">
               <div class="stat">
                 <div class="stat-num">{{ shop.sold }}</div>
-                <div class="stat-label">销量</div>
+                <div class="stat-label">Sold</div>
               </div>
               <div class="stat-divider"></div>
               <div class="stat">
                 <div class="stat-num">{{ shop.comments }}</div>
-                <div class="stat-label">评论</div>
+                <div class="stat-label">Reviews</div>
               </div>
               <div class="stat-divider"></div>
               <div class="stat">
                 <div class="stat-num">{{ vouchers.length }}</div>
-                <div class="stat-label">优惠券</div>
+                <div class="stat-label">Vouchers</div>
               </div>
             </div>
           </div>
@@ -51,19 +51,19 @@
       <section class="section">
         <div class="section-head">
           <div>
-            <h2 class="serif">🎟 优惠券 / 秒杀</h2>
-            <p class="section-sub">实时库存，秒杀开抢 →</p>
+            <h2 class="serif">🎟 Vouchers / Seckill</h2>
+            <p class="section-sub">Live stock, ready to seckill →</p>
           </div>
           <button class="ghost-btn" @click="dialog = true">
-            🛠 创建秒杀券（演示工具）
+            🛠 Create voucher (demo)
           </button>
         </div>
 
         <div v-if="!vouchers.length" class="empty-card">
           <div class="empty-icon">🎫</div>
-          <p>该商铺暂无优惠券</p>
+          <p>No vouchers for this shop yet</p>
           <button class="lime-btn" @click="dialog = true">
-            创建一张秒杀券演示 →
+            Create a seckill voucher →
           </button>
         </div>
 
@@ -77,10 +77,10 @@
             <div class="v-left">
               <div class="v-tag-row">
                 <span class="v-tag" :class="v.stock != null ? 'red' : 'gray'">
-                  {{ v.stock != null ? '秒杀' : '普通券' }}
+                  {{ v.stock != null ? 'Seckill' : 'Coupon' }}
                 </span>
                 <span v-if="v.stock != null" class="v-stock-tag">
-                  剩 {{ v.stock }} 张
+                  {{ v.stock }} left
                 </span>
               </div>
               <h3 class="v-title">{{ v.title }}</h3>
@@ -96,7 +96,7 @@
                 <span class="amount">{{ (v.payValue / 100).toFixed(0) }}</span>
               </div>
               <div class="v-discount">
-                抵 ¥{{ (v.actualValue / 100).toFixed(0) }}
+                Save ¥{{ ((v.actualValue - v.payValue) / 100).toFixed(0) }}
               </div>
               <button
                 v-if="v.stock != null"
@@ -104,9 +104,9 @@
                 :disabled="buying === v.id"
                 @click="onSeckill(v.id)"
               >
-                {{ buying === v.id ? '抢购中…' : '立即秒杀' }}
+                {{ buying === v.id ? 'Buying…' : 'Seckill Now' }}
               </button>
-              <button v-else class="ghost-btn small" disabled>普通券</button>
+              <button v-else class="ghost-btn small" disabled>Coupon</button>
             </div>
           </div>
         </div>
@@ -116,7 +116,7 @@
     <!-- 创建秒杀券 dialog -->
     <el-dialog
       v-model="dialog"
-      title="🛠 创建秒杀券（演示工具）"
+      title="🛠 Create Seckill Voucher (Demo Tool)"
       width="520px"
       class="hm-dialog"
     >
@@ -127,40 +127,40 @@
         style="margin-bottom: 16px"
       >
         <template #title>
-          调用 <code>POST /voucher/seckill</code> 创建一张秒杀券<br />
-          自动写 MySQL + Redis 库存
+          Calls <code>POST /voucher/seckill</code> to create one voucher<br />
+          and write the stock to both MySQL and Redis.
         </template>
       </el-alert>
       <el-form :model="newVoucher" label-position="top">
-        <el-form-item label="标题">
+        <el-form-item label="Title">
           <el-input v-model="newVoucher.title" />
         </el-form-item>
-        <el-form-item label="副标题">
+        <el-form-item label="Subtitle">
           <el-input v-model="newVoucher.subTitle" />
         </el-form-item>
         <el-row :gutter="12">
           <el-col :span="12">
-            <el-form-item label="支付金额(分)">
+            <el-form-item label="Pay amount (cents)">
               <el-input-number v-model="newVoucher.payValue" :min="1" style="width: 100%" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="抵扣金额(分)">
+            <el-form-item label="Face value (cents)">
               <el-input-number v-model="newVoucher.actualValue" :min="1" style="width: 100%" />
             </el-form-item>
           </el-col>
         </el-row>
-        <el-form-item label="库存">
+        <el-form-item label="Stock">
           <el-input-number v-model="newVoucher.stock" :min="1" style="width: 100%" />
         </el-form-item>
-        <el-form-item label="使用规则">
+        <el-form-item label="Rules">
           <el-input v-model="newVoucher.rules" type="textarea" :rows="2" />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="dialog = false">取消</el-button>
+        <el-button @click="dialog = false">Cancel</el-button>
         <el-button type="primary" :loading="creating" @click="onCreate">
-          创建
+          Create
         </el-button>
       </template>
     </el-dialog>
@@ -199,12 +199,12 @@ function onImgError() {
 const dialog = ref(false)
 const creating = ref(false)
 const newVoucher = ref({
-  title: '【演示秒杀】100 元代金券',
-  subTitle: '软工答辩日专享',
+  title: '[Demo Seckill] ¥100 Voucher',
+  subTitle: 'SE Presentation Day Exclusive',
   payValue: 5000,
   actualValue: 10000,
   stock: 100,
-  rules: '全场通用 / 无需预约 / 不兑现 / 不找零'
+  rules: 'All-day use / No reservation / Non-refundable / No change given'
 })
 
 onMounted(load)
@@ -230,9 +230,9 @@ async function onSeckill(id) {
   try {
     const res = await seckillVoucher(id)
     await ElMessageBox.alert(
-      `🎉 秒杀成功！\n\n订单号：${res.data}\n\n后端走完整链路：\nLua 脚本预检 → 扣 Redis 库存 → Kafka 异步入库\n\n打开 IDEA 控制台 / 数据库 tb_voucher_order 验证`,
-      '秒杀成功',
-      { type: 'success', confirmButtonText: '好的' }
+      `🎉 Seckill succeeded!\n\nOrder ID: ${res.data}\n\nBackend pipeline:\nLua precheck → Redis stock decrement → Kafka async insert\n\nCheck the IDE console / tb_voucher_order table to verify.`,
+      'Success',
+      { type: 'success', confirmButtonText: 'OK' }
     )
     await load()
   } catch (e) {
@@ -259,7 +259,7 @@ async function onCreate() {
       endTime: formatDateTime(end)
     }
     await createSeckillVoucher(body)
-    ElMessage.success('✅ 秒杀券创建成功')
+    ElMessage.success('✅ Voucher created')
     dialog.value = false
     await load()
   } catch (e) {
