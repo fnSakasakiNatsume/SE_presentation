@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 import java.time.LocalDateTime;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
@@ -26,7 +27,11 @@ public class CacheClient {
     }
 
     public void set(String key, Object value, Long time, TimeUnit unit) {
-        stringRedisTemplate.opsForValue().set(key, JSONUtil.toJsonStr(value), time, unit);
+        long baseSeconds = unit.toSeconds(time);
+        // 随机 TTL 偏移，缓解缓存雪崩（大量 key 同时过期）
+        long randomOffset = ThreadLocalRandom.current().nextLong(0, Math.max(1, baseSeconds / 10));
+        stringRedisTemplate.opsForValue().set(
+                key, JSONUtil.toJsonStr(value), baseSeconds + randomOffset, TimeUnit.SECONDS);
     }
 
     public void setWithLogicalExpire(String key, Object value, Long time, TimeUnit unit) {

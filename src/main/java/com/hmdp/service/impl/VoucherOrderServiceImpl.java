@@ -2,7 +2,7 @@ package com.hmdp.service.impl;
 
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.hmdp.config.QueueConfig;
+import com.hmdp.config.KafkaConfig;
 import com.hmdp.dto.Result;
 import com.hmdp.entity.VoucherOrder;
 import com.hmdp.mapper.VoucherOrderMapper;
@@ -16,7 +16,7 @@ import org.redisson.api.RedissonClient;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,7 +29,7 @@ import java.util.Objects;
  * <p>优化点（偏代码质量 C）：</p>
  * <ul>
  *   <li>拆分方法：Lua 校验、构建订单、发送 MQ、落库分别处理</li>
- *   <li>去掉 self 注入绕过代理的写法：让事务方法只负责“真正的落库逻辑”</li>
+ *   <li>Kafka 异步削峰：Lua 校验通过后快速返回订单 ID，MySQL 落库由消费者完成</li>
  *   <li>锁与失败路径更清晰：哪些会返回失败，哪些会抛异常让 MQ 消费端重试</li>
  * </ul>
  */
@@ -40,18 +40,18 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
     private static final String ORDER_LOCK_PREFIX = "lock:order:";
 
     private final ISeckillVoucherService seckillVoucherService;
-    private final RabbitTemplate rabbitTemplate;
+    private final KafkaTemplate<String, String> kafkaTemplate;
     private final RedisIdWorker redisIdWorker;
     private final StringRedisTemplate stringRedisTemplate;
     private final RedissonClient redissonClient;
 
     public VoucherOrderServiceImpl(ISeckillVoucherService seckillVoucherService,
-                                   RabbitTemplate rabbitTemplate,
+                                   KafkaTemplate<String, String> kafkaTemplate,
                                    RedisIdWorker redisIdWorker,
                                    StringRedisTemplate stringRedisTemplate,
                                    RedissonClient redissonClient) {
         this.seckillVoucherService = seckillVoucherService;
-        this.rabbitTemplate = rabbitTemplate;
+        this.kafkaTemplate = kafkaTemplate;
         this.redisIdWorker = redisIdWorker;
         this.stringRedisTemplate = stringRedisTemplate;
         this.redissonClient = redissonClient;
@@ -67,7 +67,7 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
 
     /**
      * 入口：用户发起秒杀请求（同步快速返回）
-     * <p>Lua 脚本做库存/一人一单资格校验，通过后把订单消息发到 MQ。</p>
+     * <p>Lua 脚本做库存/一人一单资格校验，通过后把订单消息发到 Kafka。</p>
      */
     @Override
     public Result seckillVoucher(Long voucherId) {
@@ -83,13 +83,13 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
         }
 
         VoucherOrder order = buildVoucherOrder(orderId, userId, voucherId);
-        sendOrderToMq(order);
+        sendOrderToKafka(order);
 
         return Result.ok(orderId);
     }
 
     /**
-     * MQ 消费端调用：处理订单落库
+     * Kafka 消费端调用：处理订单落库
      * <p>这里用 Redisson 锁做“同一用户串行落单”，避免并发重复创建。</p>
      */
     @Override
@@ -172,7 +172,7 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
         Long result = stringRedisTemplate.execute(
                 SECKILL_SCRIPT,
                 Collections.emptyList(),
-                voucherId.toString(), userId.toString(), String.valueOf(orderId)
+                voucherId.toString(), userId.toString()
         );
 
         if (result == null) {
@@ -198,17 +198,16 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
         return order;
     }
 
-    private void sendOrderToMq(VoucherOrder order) {
+    private void sendOrderToKafka(VoucherOrder order) {
         String jsonStr = JSONUtil.toJsonStr(order);
         try {
-            rabbitTemplate.convertAndSend(
-                    QueueConfig.X_EXCHANGE,
-                    QueueConfig.SECKILL_ORDER_ROUTING_KEY,
+            kafkaTemplate.send(
+                    KafkaConfig.SECKILL_ORDER_TOPIC,
+                    String.valueOf(order.getVoucherId()),
                     jsonStr
             );
         } catch (Exception e) {
-            // 这里选择抛异常：让调用方感知失败（并由上层统一处理）
-            log.error("发送 RabbitMQ 消息失败，orderId={}, userId={}, voucherId={}",
+            log.error("发送 Kafka 消息失败，orderId={}, userId={}, voucherId={}",
                     order.getId(), order.getUserId(), order.getVoucherId(), e);
             throw new RuntimeException("发送消息失败", e);
         }
